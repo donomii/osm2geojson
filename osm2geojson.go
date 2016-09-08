@@ -55,19 +55,36 @@ func main() {
                 //if pagename, ok := tags["wikipedia"]; ok {
                     //fmt.Println(tags)
                 //}
-                fmt.Printf("{ \"type\": \"Feature\", ")
-                fmt.Printf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] } }, ", a["lat"], a["lon"])
-                fmt.Printf("\"properties\": { ")
-                start := true
-                for k,v := range tags {
-                    if start {
-                        start = false
-                    } else {
-                        fmt.Printf(",")
-                    }
-                    fmt.Printf(" \"%v\": \"%v\"", k,v)
+                //fmt.Println("Attribs: ", a)
+                //for k,v := range a{
+                    //fmt.Printf(" '%v': '%v' ", k,v)
+                //}
+                lat, ok := a["lat"]
+                if !ok {
+                     lat = a["{ lat}"]
                 }
-                fmt.Printf("} }\n")
+                lon, ok := a["lon"] 
+                if !ok {
+                    lon =  a["{ lon}"]
+                }
+                fmt.Printf("{ \"type\": \"Feature\", ")
+                id, ok := a["{ id}"]
+                if ok { fmt.Printf("{ \"id\": \"%v\", ", id) }
+                fmt.Printf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] }, ", lon, lat)
+                if len(tags)>0 {
+                    fmt.Printf("\"properties\": { ")
+                    start := true
+                    for k,v := range tags {
+                        if start {
+                            start = false
+                        } else {
+                            fmt.Printf(",")
+                        }
+                        fmt.Printf(" \"%v\": \"%v\"", k,v)
+                    }
+                    fmt.Printf(" }")
+                }
+                fmt.Printf(" }\n")
                 current_element = nil
                 tags = nil
             }
