@@ -1,13 +1,21 @@
 package main
 
+import "github.com/pkg/profile"
 import (
+    "bufio"
     "encoding/xml"
     "fmt"
     "os"
+    "log"
 )
 func main() {
-    xmlFile := os.Stdin
-    defer xmlFile.Close()
+    defer profile.Start(profile.TraceProfile).Stop()
+    f, err := os.Open("file")
+    log.Println(err)
+    //xmlFile := bufio.NewReader(os.Stdin)
+    xmlFile := bufio.NewReader(f)
+    out := bufio.NewWriter(os.Stdout)
+    //defer xmlFile.Close()
     decoder := xml.NewDecoder(xmlFile)
     var current_element *xml.StartElement
     var tags map[string] string
@@ -67,24 +75,24 @@ func main() {
                 if !ok {
                     lon =  a["{ lon}"]
                 }
-                fmt.Printf("{ \"type\": \"Feature\", ")
+                out.WriteString(fmt.Sprintf("{ \"type\": \"Feature\", "))
                 id, ok := a["{ id}"]
-                if ok { fmt.Printf("{ \"id\": \"%v\", ", id) }
-                fmt.Printf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] }, ", lon, lat)
+                if ok { out.WriteString(fmt.Sprintf("{ \"id\": \"%v\", ", id)) }
+                out.WriteString(fmt.Sprintf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] }, ", lon, lat))
                 if len(tags)>0 {
-                    fmt.Printf("\"properties\": { ")
+                    out.WriteString(fmt.Sprintf("\"properties\": { "))
                     start := true
                     for k,v := range tags {
                         if start {
                             start = false
                         } else {
-                            fmt.Printf(",")
+                            out.WriteString(fmt.Sprintf(","))
                         }
-                        fmt.Printf(" \"%v\": \"%v\"", k,v)
+                        out.WriteString(fmt.Sprintf(" \"%v\": \"%v\"", k,v))
                     }
-                    fmt.Printf(" }")
+                    out.WriteString(fmt.Sprintf(" }"))
                 }
-                fmt.Printf(" }\n")
+                out.WriteString(fmt.Sprintf(" }\n"))
                 current_element = nil
                 tags = nil
             }
