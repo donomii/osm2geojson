@@ -1,7 +1,9 @@
 package main
 
 //import "github.com/pkg/profile"
+import "regexp"
 import "compress/bzip2"
+import "compress/gzip"
 import (
 	"bufio"
 	"encoding/xml"
@@ -10,6 +12,10 @@ import (
 	"os"
 )
 
+func checkErr(err error) {
+	log.Println(err)
+}
+
 func main() {
 	//defer profile.Start(profile.TraceProfile).Stop()
 	var xmlFile *bufio.Reader
@@ -17,15 +23,28 @@ func main() {
 	if len(os.Args) > 1 {
 		log.Println(os.Args[1])
 		f, err := os.Open(os.Args[1])
-		log.Println(err)
+		checkErr(err)
 		xmlFile = bufio.NewReader(f)
 		//defer xmlFile.Close()
 	} else {
 		//log.Println("Reading from stdin")
 		xmlFile = bufio.NewReader(os.Stdin)
 	}
+
 	xmlFile = bufio.NewReader(bzip2.NewReader(xmlFile))
-	out := bufio.NewWriter(os.Stdout)
+	aBuff := bufio.NewWriter(os.Stdout)
+
+	if len(os.Args) > 2 {
+		log.Println(os.Args[2])
+		f, err := os.Create(os.Args[2])
+		checkErr(err)
+		aBuff = bufio.NewWriter(f)
+
+		//defer xmlFile.Close()
+	}
+
+	bBuff := gzip.NewWriter(aBuff)
+	out := bufio.NewWriter(bBuff)
 
 	decoder := xml.NewDecoder(xmlFile)
 	var current_element *xml.StartElement
@@ -33,8 +52,9 @@ func main() {
 	tags = map[string]string{}
 	a := map[string]string{}
 	for {
-		gen_token, _ := decoder.Token()
+		gen_token, err := decoder.Token()
 		if gen_token == nil {
+			log.Println("Error while decoding: ", err)
 			break
 		}
 		//fmt.Printf("%V\n", gen_token)
@@ -89,11 +109,11 @@ func main() {
 				out.WriteString(fmt.Sprintf("{ \"type\": \"Feature\", "))
 				id, ok := a["{ id}"]
 				if ok {
-					out.WriteString(fmt.Sprintf("{ \"id\": \"%v\", ", id))
+					out.WriteString(fmt.Sprintf("\"id\": \"%v\", ", id))
 				}
-				out.WriteString(fmt.Sprintf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] }, ", lon, lat))
+				out.WriteString(fmt.Sprintf("\"geometry\": { \"type\": \"Point\", \"coordinates\": [ %v, %v ] }", lon, lat))
 				if len(tags) > 0 {
-					out.WriteString(fmt.Sprintf("\"properties\": { "))
+					out.WriteString(fmt.Sprintf(", \"properties\": { "))
 					start := true
 					for k, v := range tags {
 						if start {
@@ -101,7 +121,8 @@ func main() {
 						} else {
 							out.WriteString(fmt.Sprintf(","))
 						}
-						out.WriteString(fmt.Sprintf(" \"%v\": \"%v\"", k, v))
+						re := regexp.MustCompile("\"")
+						out.WriteString(fmt.Sprintf(" \"%v\": \"%v\"", re.ReplaceAllLiteralString(k, "\\\""), re.ReplaceAllLiteralString(v, "\\\"")))
 					}
 					out.WriteString(fmt.Sprintf(" }"))
 				}
@@ -111,4 +132,9 @@ func main() {
 			}
 		}
 	}
+	out.Flush()
+	bBuff.Flush()
+	bBuff.Close()
+	aBuff.Flush()
+	log.Println("Job's a good'un, boss!")
 }
