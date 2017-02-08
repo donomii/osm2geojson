@@ -24,9 +24,6 @@ Note it currently only extracts points.  More complicated structures are not imp
 
 ## Read from file, write to file
 
-
-## Read from file, write to stdout
-
     ./osm2geojson europe.osm.bz2 europe.geojson.gz
 
     osm2geojson europe.osm.bz2 europe.geojson.gz
