@@ -3,7 +3,7 @@ Converts Open Street Map osm files into geojson
 
 Works on osm files or streams, allowing it to process files directly from the network, without downloading them first.
 
-# Caveats
+# To do
 
 Note it currently only extracts points.  More complicated structures are not implemented yet.
 
