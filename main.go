@@ -4,30 +4,28 @@ package main
 import "compress/bzip2"
 import "compress/gzip"
 import (
-	"strings"
-	"strconv"
-	"encoding/json"
 	"bufio"
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 )
-
 
 //{ "type": "Feature", "id": "2292591621", "geometry": { "type": "Point", "coordinates": [ 121.534116, 25.0146649 ] }, "properties": {  "name": "NET", "shop": "clothes", "wheelchair": "limited", "addr:street": "羅斯福路四段", "addr:housenumber": "64", "toilets:wheelchair": "no", "wheelchair:description": "門口有一個階梯,每層樓上下只有樓梯,沒有電梯
 
-
 type Geometry struct {
-	Type string `json:"type"`
-	Coordinates  []float64 `json:"coordinates"`
+	Type        string    `json:"type"`
+	Coordinates []float64 `json:"coordinates"`
 }
 
 type GeoJSON struct {
-	Type	string `json:"type"`
-	Id	string `json:"id"`
-	Geometry	Geometry `json:"geometry"`
-	Properties	map[string]string `json:"properties"`
+	Type       string            `json:"type"`
+	Id         string            `json:"id"`
+	Geometry   Geometry          `json:"geometry"`
+	Properties map[string]string `json:"properties"`
 }
 
 func checkErr(err error) {
@@ -65,7 +63,7 @@ func main() {
 		xmlFile = bufio.NewReader(g)
 	}
 
-	aBuff := bufio.NewWriter(os.Stdout)
+	outBuff := bufio.NewWriter(os.Stdout)
 
 	if len(os.Args) > 2 {
 		outFile = os.Args[2]
@@ -80,7 +78,7 @@ func main() {
 		//defer xmlFile.Close()
 	}
 
-	out := json.NewEncoder(aBuff)
+	out := json.NewEncoder(outBuff)
 
 	decoder := xml.NewDecoder(xmlFile)
 	var current_element *xml.StartElement
@@ -127,17 +125,6 @@ func main() {
 			}
 		case xml.EndElement:
 			if token.Name.Local == "node" {
-				//if pagename, ok := tags["wikipedia"]; ok {
-				//fmt.Println(tags)
-				//}
-				//fmt.Println("Attribs: ", a)
-				//for k,v := range a{
-				//fmt.Printf(" '%v': '%v' ", k,v)
-				//}
-
-
-
-
 				lat, ok := a["lat"]
 				if !ok {
 					lat = a["{ lat}"]
@@ -150,22 +137,22 @@ func main() {
 				flat, _ := strconv.ParseFloat(lon, 64)
 				flon, _ := strconv.ParseFloat(lat, 64)
 				geom := Geometry{
-					Type: "Point", 
+					Type:        "Point",
 					Coordinates: []float64{flon, flat},
 				}
 
 				g := GeoJSON{
-	Type:	"Feature",
-	Id: id,
-	Geometry: geom,
-	Properties: tags,
-}
-out.Encode(g)
+					Type:       "Feature",
+					Id:         id,
+					Geometry:   geom,
+					Properties: tags,
+				}
+				out.Encode(g)
 				current_element = nil
 				tags = nil
 			}
 		}
 	}
-	aBuff.Flush()
+	outBuff.Flush()
 	log.Println("Job's a good'un, boss!")
 }
