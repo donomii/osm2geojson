@@ -23,6 +23,10 @@ Note osm2geojson currently extracts only points.  More complicated structures ar
     cat europe.osm | ./osm2geojson
 
     type europe.osm | osm2geojson
+	
+## Converting directly from the internet
+
+	wget -q -O - http://download.geofabrik.de/antarctica-latest.osm.bz2 | bunzip2  | ./osm2geojson
 
 ## Read from file, write to stdout
 
