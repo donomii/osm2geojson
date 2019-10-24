@@ -72,7 +72,7 @@ func main() {
 		} else {
 			f, err := os.Create(outFile)
 			checkErr(err)
-			aBuff = bufio.NewWriter(f)
+			outBuff = bufio.NewWriter(f)
 		}
 
 		//defer xmlFile.Close()
