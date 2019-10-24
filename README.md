@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/donomii/osm2geojson.svg?branch=master)](https://travis-ci.org/donomii/osm2geojson)
+[![GoDoc](https://godoc.org/github.com/donomii/osm2geojson?status.svg)](https://godoc.org/github.com/donomii/osm2geojson)
+
+
 # osm2geojson
 Converts Open Street Map osm files into geojson
 
@@ -5,12 +9,12 @@ Works on osm files or streams, allowing it to process files directly from the ne
 
 # To do
 
-Note it currently only extracts points.  More complicated structures are not implemented yet.
+Note osm2geojson currently extracts only points.  More complicated structures are not implemented yet.
 
 # To install
 
     go get github.com/donomii/osm2geojson
-    go build github.com/donomii/osm2geojson
+    go install github.com/donomii/osm2geojson
 
 # To use
 
