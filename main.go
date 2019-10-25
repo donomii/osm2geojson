@@ -140,7 +140,7 @@ func main() {
 				flon, _ := strconv.ParseFloat(lat, 64)
 				geom := Geometry{
 					Type:        "Point",
-					Coordinates: []float64{flon, flat},
+					Coordinates: []float64{flat, flon},
 				}
 
 				g := GeoJSON{
