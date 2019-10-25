@@ -1,20 +1,21 @@
 package main
 
-//import "github.com/pkg/profile"
-import "compress/bzip2"
-import "compress/gzip"
 import (
 	"bufio"
 	"encoding/json"
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"log"
 	"os"
 	"strconv"
-	"strings"
+
+	"github.com/donomii/goof"
 )
 
 //{ "type": "Feature", "id": "2292591621", "geometry": { "type": "Point", "coordinates": [ 121.534116, 25.0146649 ] }, "properties": {  "name": "NET", "shop": "clothes", "wheelchair": "limited", "addr:street": "羅斯福路四段", "addr:housenumber": "64", "toilets:wheelchair": "no", "wheelchair:description": "門口有一個階梯,每層樓上下只有樓梯,沒有電梯
+
+var strict bool
 
 type Geometry struct {
 	Type        string    `json:"type"`
@@ -29,7 +30,9 @@ type GeoJSON struct {
 }
 
 func checkErr(err error) {
-	log.Println(err)
+	if err != nil {
+		log.Println(fmt.Sprintf("Error: %v", err))
+	}
 }
 
 func main() {
@@ -37,37 +40,32 @@ func main() {
 	var xmlFile *bufio.Reader
 	var inFile string
 	var outFile string
-	//log.Println(os.Args)
-	if len(os.Args) > 1 {
-		inFile = os.Args[1]
-		log.Println(inFile)
+	var compression string
+
+	flag.StringVar(&compression, "compression", "", "Input is compressed with bz2 or gz")
+	flag.BoolVar(&strict, "strict", false, "Emit correct geojson format.  By default, emit grep-friendly geojson.")
+	flag.Parse()
+
+	args := flag.Args()
+	///log.Println(args)
+	if len(args) > 0 {
+		inFile = args[0]
+		log.Println("Reading from", inFile)
 		if inFile == "-" {
-			xmlFile = bufio.NewReader(os.Stdin)
-		} else {
-			f, err := os.Open(inFile)
-			checkErr(err)
-			xmlFile = bufio.NewReader(f)
+			inFile = ""
 		}
+		xmlFile = bufio.NewReader(goof.OpenInput(inFile, compression))
 		//defer xmlFile.Close()
 	} else {
-		//log.Println("Reading from stdin")
-		xmlFile = bufio.NewReader(os.Stdin)
-	}
-
-	if strings.HasSuffix(inFile, "bz2") {
-		xmlFile = bufio.NewReader(bzip2.NewReader(xmlFile))
-	}
-	if strings.HasSuffix(inFile, "gz") {
-		//Hooray, more golang bullshit
-		g, _ := gzip.NewReader(xmlFile)
-		xmlFile = bufio.NewReader(g)
+		log.Println("Reading from stdin")
+		xmlFile = bufio.NewReader(goof.OpenInput("", compression))
 	}
 
 	outBuff := bufio.NewWriter(os.Stdout)
 
-	if len(os.Args) > 2 {
-		outFile = os.Args[2]
-		log.Println(outFile)
+	if len(args) > 1 {
+		outFile = args[1]
+		log.Println("Writing to", outFile)
 		if outFile == "-" {
 		} else {
 			f, err := os.Create(outFile)
@@ -78,7 +76,11 @@ func main() {
 		//defer xmlFile.Close()
 	}
 
-	out := json.NewEncoder(outBuff)
+	if strict {
+		fmt.Fprintf(outBuff, "[")
+	}
+	//out := json.NewEncoder(outBuff)
+	firstItem := true
 
 	decoder := xml.NewDecoder(xmlFile)
 	var current_element *xml.StartElement
@@ -91,7 +93,7 @@ func main() {
 			log.Println("Error while decoding: ", err)
 			break
 		}
-		//fmt.Printf("%V\n", gen_token)
+		//log.Printf("%V\n", gen_token)
 		switch token := gen_token.(type) {
 		case xml.StartElement:
 			if token.Name.Local == "node" {
@@ -104,7 +106,7 @@ func main() {
 				}
 
 				current_element = &token
-				//fmt.Println(gen_token.Attr.());
+				//log.Println(gen_token.Attr.());
 			} else if token.Name.Local == "tag" {
 				if current_element != nil {
 					var key string
@@ -117,7 +119,7 @@ func main() {
 							value = attr.Value
 						}
 					}
-					// fmt.Printf("%s = %s\n", key, value)
+					// log.Printf("%s = %s\n", key, value)
 					if key != "" && value != "" {
 						tags[key] = value
 					}
@@ -147,11 +149,30 @@ func main() {
 					Geometry:   geom,
 					Properties: tags,
 				}
-				out.Encode(g)
+				byt, err := json.Marshal(g)
+				if err != nil {
+					panic(fmt.Sprintf("Could not encode output data because: %v", err))
+				}
+				//out.Encode(g)
+				if firstItem {
+					firstItem = false
+				} else {
+					if strict {
+						fmt.Fprintf(outBuff, ",")
+					}
+				}
+				fmt.Fprintf(outBuff, "%s", string(byt))
+				if !strict {
+					fmt.Fprintf(outBuff, "\n")
+				}
+				outBuff.Flush()
 				current_element = nil
 				tags = nil
 			}
 		}
+	}
+	if strict {
+		fmt.Fprintf(outBuff, "]")
 	}
 	outBuff.Flush()
 	log.Println("Job's a good'un, boss!")
