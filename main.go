@@ -54,11 +54,11 @@ func main() {
 		if inFile == "-" {
 			inFile = ""
 		}
-		xmlFile = bufio.NewReader(goof.OpenInput(inFile, compression))
+		xmlFile = goof.OpenBufferedInput(inFile, compression)
 		//defer xmlFile.Close()
 	} else {
 		log.Println("Reading from stdin")
-		xmlFile = bufio.NewReader(goof.OpenInput("", compression))
+		xmlFile = goof.OpenBufferedInput("", compression)
 	}
 
 	outBuff := bufio.NewWriter(os.Stdout)
