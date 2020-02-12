@@ -2,3 +2,5 @@
 main
 
 osm2geojson
+*.geojson
+*.bz2
