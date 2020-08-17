@@ -2,5 +2,6 @@
 main
 
 osm2geojson
+osm2geojson.exe
 *.geojson
 *.bz2
